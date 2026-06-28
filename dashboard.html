@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monthly Expense Console</title>
+  <style>
+    :root {
+      --bg: #090c0b;
+      --panel: #101512;
+      --panel-2: #151b17;
+      --line: #2b3830;
+      --line-soft: #1f2823;
+      --text: #e6f0e9;
+      --muted: #98a79e;
+      --green: #32f0a1;
+      --cyan: #53c7f0;
+      --amber: #f3be4e;
+      --red: #ff625f;
+      --violet: #b38cff;
+      --lime: #b5e853;
+      --shadow: rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(50, 240, 161, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(50, 240, 161, 0.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 28px 28px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1480px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 22px 0 34px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .kicker {
+      margin: 0 0 8px;
+      color: var(--green);
+      letter-spacing: 0;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(28px, 5vw, 54px);
+      line-height: 0.95;
+      font-weight: 800;
+    }
+
+    h2 {
+      font-size: 15px;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: #f7fbf8;
+    }
+
+    h3 {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: end;
+    }
+
+    .select-shell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    select {
+      min-width: 160px;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .badge {
+      display: none;
+      color: #0b0d0c;
+      background: var(--amber);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .badge.show {
+      display: inline-flex;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .metric,
+    .panel {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)), var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: 0 18px 45px var(--shadow);
+    }
+
+    .metric {
+      min-height: 145px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 10px;
+      font-size: clamp(24px, 3vw, 36px);
+      line-height: 1;
+      color: var(--green);
+      overflow-wrap: anywhere;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .burn {
+      height: 9px;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #24302a;
+      border: 1px solid #34463b;
+    }
+
+    .burn i {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--green), var(--amber));
+    }
+
+    .burn i.hot {
+      background: linear-gradient(90deg, var(--amber), var(--red));
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .grid.two {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    }
+
+    .grid.three {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 18px;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel-head span {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .category-split {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .svg-text-main {
+      fill: var(--text);
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .svg-text-sub {
+      fill: var(--muted);
+      font-size: 9px;
+      text-transform: uppercase;
+    }
+
+    .ledger,
+    .recent,
+    .insights,
+    .budgets {
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(90px, 1fr) minmax(70px, auto) minmax(56px, auto);
+      gap: 10px;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .row-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .row-name b {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      text-transform: capitalize;
+    }
+
+    .row-name small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .money {
+      color: var(--green);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pct {
+      color: var(--muted);
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .budget-line {
+      display: grid;
+      grid-template-columns: minmax(95px, 130px) minmax(0, 1fr) minmax(86px, auto);
+      gap: 12px;
+      align-items: center;
+    }
+
+    .bar {
+      position: relative;
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #222d27;
+      border: 1px solid #303f36;
+    }
+
+    .bar i {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--cyan);
+    }
+
+    .bar i.warn {
+      background: var(--amber);
+    }
+
+    .bar i.danger {
+      background: var(--red);
+    }
+
+    .recent-item {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+      padding-bottom: 11px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .recent-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .date {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .note {
+      min-width: 0;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .category-pill {
+      display: inline-flex;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    .income {
+      color: var(--cyan);
+    }
+
+    .expense {
+      color: var(--green);
+    }
+
+    .insights li {
+      color: var(--muted);
+      line-height: 1.55;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .insights li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .insights strong {
+      color: var(--text);
+    }
+
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    @media (max-width: 1100px) {
+      .summary,
+      .grid.three {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.two,
+      .category-split {
+        grid-template-columns: 1fr;
+      }
+
+      .category-split > div:first-child {
+        max-width: 280px;
+        margin: 0 auto;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .app {
+        width: min(100vw - 18px, 680px);
+        padding-top: 8px;
+      }
+
+      .topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .controls {
+        justify-content: start;
+      }
+
+      .summary,
+      .grid.three {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        min-height: 120px;
+      }
+
+      .budget-line {
+        grid-template-columns: 1fr;
+      }
+
+      .recent-item {
+        grid-template-columns: 60px minmax(0, 1fr);
+      }
+
+      .recent-item .money {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script src="data.js"></script>
+  <div class="app">
+    <header class="topbar">
+      <div>
+        <p class="kicker">Local ledger</p>
+        <h1>Monthly Expense Console</h1>
+      </div>
+      <div class="controls">
+        <label class="select-shell" for="monthSelect">Month
+          <select id="monthSelect"></select>
+        </label>
+        <span class="badge" id="sampleBadge">Sample preview</span>
+      </div>
+    </header>
+
+    <section class="summary">
+      <article class="metric">
+        <div>
+          <h3>Spent</h3>
+          <strong id="spentMetric">₹0</strong>
+          <span id="budgetMetric">of ₹0 budget</span>
+        </div>
+        <div class="burn"><i id="burnFill"></i></div>
+      </article>
+      <article class="metric">
+        <div>
+          <h3>Projected</h3>
+          <strong id="projectedMetric">₹0</strong>
+          <span id="projectedHint">month-end pace</span>
+        </div>
+      </article>
+      <article class="metric">
+        <div>
+          <h3>Remaining</h3>
+          <strong id="remainingMetric">₹0</strong>
+          <span id="remainingHint">available</span>
+        </div>
+      </article>
+      <article class="metric">
+        <div>
+          <h3>Income Logged</h3>
+          <strong id="incomeMetric">₹0</strong>
+          <span id="netHint">net cashflow</span>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Where The Money Goes</h2>
+          <span id="categoryCount">0 categories</span>
+        </div>
+        <div class="category-split">
+          <div id="donutChart"></div>
+          <div class="ledger" id="categoryLedger"></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Budgets & Alerts</h2>
+          <span id="alertCount">0 over cap</span>
+        </div>
+        <div class="budgets" id="budgetAlerts"></div>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Daily Burn</h2>
+          <span id="dailyHint">cumulative vs pace</span>
+        </div>
+        <div id="dailyBurnChart"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Month Over Month</h2>
+          <span>last 6 months</span>
+        </div>
+        <div id="momChart"></div>
+      </article>
+    </section>
+
+    <section class="grid two">
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Spending Insights</h2>
+          <span id="insightMonth">current month</span>
+        </div>
+        <ul class="insights" id="insights"></ul>
+      </article>
+
+      <article class="panel">
+        <div class="panel-head">
+          <h2>Recent Activity</h2>
+          <span id="recentCount">0 entries</span>
+        </div>
+        <div class="recent" id="recentActivity"></div>
+      </article>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const categories = [
+        "travel", "food", "groceries", "clothes", "rent", "bills",
+        "luxuries", "investments", "health", "education", "other"
+      ];
+      const colors = {
+        travel: "#53c7f0",
+        food: "#32f0a1",
+        groceries: "#b5e853",
+        clothes: "#b38cff",
+        rent: "#f3be4e",
+        bills: "#7dd3fc",
+        luxuries: "#ff8f5f",
+        investments: "#8df0c8",
+        health: "#ff625f",
+        education: "#d6a4ff",
+        other: "#98a79e"
+      };
+      const sampleConfig = {
+        currency: "₹",
+        monthlyBudget: 60000,
+        budgets: {
+          travel: 6000,
+          food: 9000,
+          groceries: 10000,
+          clothes: 5000,
+          rent: 25000,
+          bills: 6000,
+          luxuries: 5000,
+          investments: 10000,
+          health: 4000,
+          education: 3000,
+          other: 4000
+        }
+      };
+
+      const usingSample = !Array.isArray(window.EXPENSE_DATA);
+      const config = Object.assign({}, sampleConfig, window.EXPENSE_CONFIG || {});
+      config.budgets = Object.assign({}, sampleConfig.budgets, config.budgets || {});
+      const data = normalizeRows(usingSample ? makeSampleData() : window.EXPENSE_DATA);
+
+      const els = {
+        monthSelect: document.getElementById("monthSelect"),
+        sampleBadge: document.getElementById("sampleBadge"),
+        spentMetric: document.getElementById("spentMetric"),
+        budgetMetric: document.getElementById("budgetMetric"),
+        burnFill: document.getElementById("burnFill"),
+        projectedMetric: document.getElementById("projectedMetric"),
+        projectedHint: document.getElementById("projectedHint"),
+        remainingMetric: document.getElementById("remainingMetric"),
+        remainingHint: document.getElementById("remainingHint"),
+        incomeMetric: document.getElementById("incomeMetric"),
+        netHint: document.getElementById("netHint"),
+        categoryCount: document.getElementById("categoryCount"),
+        donutChart: document.getElementById("donutChart"),
+        categoryLedger: document.getElementById("categoryLedger"),
+        alertCount: document.getElementById("alertCount"),
+        budgetAlerts: document.getElementById("budgetAlerts"),
+        dailyHint: document.getElementById("dailyHint"),
+        dailyBurnChart: document.getElementById("dailyBurnChart"),
+        momChart: document.getElementById("momChart"),
+        insightMonth: document.getElementById("insightMonth"),
+        insights: document.getElementById("insights"),
+        recentCount: document.getElementById("recentCount"),
+        recentActivity: document.getElementById("recentActivity")
+      };
+
+      if (usingSample) {
+        els.sampleBadge.classList.add("show");
+      }
+
+      const months = availableMonths(data);
+      const current = monthKey(new Date());
+      let selectedMonth = months.includes(current) ? current : months[0];
+      fillMonthSelect(months, selectedMonth);
+      els.monthSelect.addEventListener("change", () => {
+        selectedMonth = els.monthSelect.value;
+        render();
+      });
+      render();
+
+      function render() {
+        const monthRows = data.filter(row => row.date.slice(0, 7) === selectedMonth);
+        const expenseRows = monthRows.filter(row => row.type === "expense");
+        const incomeRows = monthRows.filter(row => row.type === "income");
+        const spent = sum(expenseRows);
+        const income = sum(incomeRows);
+        const budget = Number(config.monthlyBudget || 0);
+        const remaining = budget - spent;
+        const days = daysInMonth(selectedMonth);
+        const elapsed = elapsedDaysForMonth(selectedMonth);
+        const projected = elapsed ? (spent / elapsed) * days : 0;
+        const categoryTotals = totalsByCategory(expenseRows);
+        const sortedCategories = Object.entries(categoryTotals)
+          .filter(([, value]) => value > 0)
+          .sort((a, b) => b[1] - a[1]);
+        const overCaps = categories.filter(category => categoryTotals[category] > (config.budgets[category] || 0));
+
+        els.spentMetric.textContent = money(spent);
+        els.budgetMetric.textContent = `of ${money(budget)} budget`;
+        els.burnFill.style.width = `${Math.min(100, budget ? (spent / budget) * 100 : 0)}%`;
+        els.burnFill.classList.toggle("hot", budget > 0 && spent > budget);
+        els.projectedMetric.textContent = money(projected);
+        els.projectedHint.textContent = projected > budget
+          ? `${money(projected - budget)} over pace`
+          : `${money(budget - projected)} under pace`;
+        els.remainingMetric.textContent = money(Math.abs(remaining));
+        els.remainingHint.textContent = remaining >= 0 ? "available" : "over budget";
+        els.incomeMetric.textContent = money(income);
+        els.netHint.textContent = `net ${money(income - spent)}`;
+        els.categoryCount.textContent = `${sortedCategories.length} categories`;
+        els.alertCount.textContent = `${overCaps.length} over cap`;
+        els.dailyHint.textContent = `${elapsed}/${days} days elapsed`;
+        els.insightMonth.textContent = displayMonth(selectedMonth);
+        els.recentCount.textContent = `${monthRows.length} entries`;
+
+        renderDonut(sortedCategories, spent);
+        renderLedger(sortedCategories, spent);
+        renderBudgets(categoryTotals);
+        renderDailyBurn(expenseRows, budget, days);
+        renderMomChart();
+        renderInsights({ spent, income, budget, projected, categoryTotals, expenseRows, overCaps });
+        renderRecent(monthRows);
+      }
+
+      function renderDonut(entries, spent) {
+        const radius = 58;
+        const circumference = 2 * Math.PI * radius;
+        let offset = 0;
+        const circles = entries.map(([category, value]) => {
+          const length = spent ? (value / spent) * circumference : 0;
+          const dashOffset = -offset;
+          offset += length;
+          return `<circle cx="90" cy="90" r="${radius}" fill="none" stroke="${colors[category] || colors.other}" stroke-width="24" stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 90 90)" />`;
+        }).join("");
+        els.donutChart.innerHTML = `
+          <svg viewBox="0 0 180 180" role="img" aria-label="Category donut chart">
+            <circle cx="90" cy="90" r="${radius}" fill="none" stroke="#24302a" stroke-width="24" />
+            ${circles}
+            <text x="90" y="86" text-anchor="middle" class="svg-text-sub">spent</text>
+            <text x="90" y="106" text-anchor="middle" class="svg-text-main">${shortMoney(spent)}</text>
+          </svg>`;
+      }
+
+      function renderLedger(entries, spent) {
+        if (!entries.length) {
+          els.categoryLedger.innerHTML = `<div class="empty">No spending in ${displayMonth(selectedMonth)}</div>`;
+          return;
+        }
+        els.categoryLedger.innerHTML = entries.map(([category, value]) => {
+          const pct = spent ? (value / spent) * 100 : 0;
+          return `
+            <div class="row">
+              <div class="row-name">
+                <b>${escapeHtml(category)}</b>
+                <small>${Math.round(pct)}% share</small>
+              </div>
+              <span class="money">${money(value)}</span>
+              <span class="pct">${pct.toFixed(1)}%</span>
+            </div>`;
+        }).join("");
+      }
+
+      function renderBudgets(categoryTotals) {
+        els.budgetAlerts.innerHTML = categories.map(category => {
+          const cap = Number(config.budgets[category] || 0);
+          const spent = categoryTotals[category] || 0;
+          const ratio = cap ? spent / cap : 0;
+          const danger = cap && spent > cap;
+          const warn = cap && spent > cap * 0.8 && !danger;
+          return `
+            <div class="budget-line">
+              <div class="row-name">
+                <b>${escapeHtml(category)}</b>
+                <small>${money(spent)} / ${money(cap)}</small>
+              </div>
+              <div class="bar"><i class="${danger ? "danger" : warn ? "warn" : ""}" style="width:${Math.min(100, ratio * 100)}%"></i></div>
+              <span class="pct">${cap ? Math.round(ratio * 100) : 0}%</span>
+            </div>`;
+        }).join("");
+      }
+
+      function renderDailyBurn(expenseRows, budget, days) {
+        const daily = Array.from({ length: days }, () => 0);
+        expenseRows.forEach(row => {
+          const day = Math.max(1, Math.min(days, Number(row.date.slice(8, 10)))) - 1;
+          daily[day] += row.amount;
+        });
+        let running = 0;
+        const cumulative = daily.map(value => running += value);
+        const maxY = Math.max(budget, ...cumulative, 1);
+        const width = 680;
+        const height = 250;
+        const pad = 34;
+        const chartW = width - pad * 2;
+        const chartH = height - pad * 2;
+        const point = (value, index) => {
+          const x = pad + (days === 1 ? 0 : (index / (days - 1)) * chartW);
+          const y = height - pad - (value / maxY) * chartH;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        };
+        const spendPath = cumulative.map(point).join(" ");
+        const pacePath = Array.from({ length: days }, (_, index) => point((budget / days) * (index + 1), index)).join(" ");
+        els.dailyBurnChart.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Daily burn chart">
+            ${gridLines(width, height, pad)}
+            <polyline points="${pacePath}" fill="none" stroke="#f3be4e" stroke-width="2" stroke-dasharray="7 6" />
+            <polyline points="${spendPath}" fill="none" stroke="#32f0a1" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" />
+            <text x="${pad}" y="22" fill="#98a79e" font-size="12">0</text>
+            <text x="${width - pad}" y="22" fill="#98a79e" text-anchor="end" font-size="12">${money(maxY)}</text>
+            <text x="${pad}" y="${height - 8}" fill="#98a79e" font-size="12">Day 1</text>
+            <text x="${width - pad}" y="${height - 8}" fill="#98a79e" text-anchor="end" font-size="12">Day ${days}</text>
+          </svg>`;
+      }
+
+      function renderMomChart() {
+        const monthList = lastSixMonths(selectedMonth);
+        const totals = monthList.map(month => {
+          const rows = data.filter(row => row.type === "expense" && row.date.slice(0, 7) === month);
+          return sum(rows);
+        });
+        const maxTotal = Math.max(...totals, Number(config.monthlyBudget || 0), 1);
+        const width = 680;
+        const height = 250;
+        const pad = 34;
+        const gap = 14;
+        const barW = (width - pad * 2 - gap * (monthList.length - 1)) / monthList.length;
+        const chartH = height - pad * 2;
+        const bars = monthList.map((month, index) => {
+          const value = totals[index];
+          const barH = (value / maxTotal) * chartH;
+          const x = pad + index * (barW + gap);
+          const y = height - pad - barH;
+          const fill = month === selectedMonth ? "#32f0a1" : "#53c7f0";
+          return `
+            <rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="4" fill="${fill}" />
+            <text x="${x + barW / 2}" y="${height - 11}" fill="#98a79e" text-anchor="middle" font-size="11">${monthLabel(month)}</text>
+            <text x="${x + barW / 2}" y="${Math.max(18, y - 8)}" fill="#e6f0e9" text-anchor="middle" font-size="11">${shortMoney(value)}</text>`;
+        }).join("");
+        els.momChart.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Month over month spending chart">
+            ${gridLines(width, height, pad)}
+            ${bars}
+          </svg>`;
+      }
+
+      function renderInsights(model) {
+        const entries = Object.entries(model.categoryTotals)
+          .filter(([, value]) => value > 0)
+          .sort((a, b) => b[1] - a[1]);
+        const biggest = entries[0] || ["none", 0];
+        const annualSave = biggest[1] * 0.2 * 12;
+        const discretionary = ["food", "luxuries", "clothes"].reduce((total, category) => total + (model.categoryTotals[category] || 0), 0);
+        const foodRows = model.expenseRows.filter(row => row.category === "food");
+        const elapsedWeeks = Math.max(1, elapsedDaysForMonth(selectedMonth) / 7);
+        const previousMonth = addMonths(selectedMonth, -1);
+        const prevSpend = sum(data.filter(row => row.type === "expense" && row.date.slice(0, 7) === previousMonth));
+        const momDiff = model.spent - prevSpend;
+        const overText = model.overCaps.length
+          ? model.overCaps.map(category => `${category} by ${money((model.categoryTotals[category] || 0) - (config.budgets[category] || 0))}`).join(", ")
+          : `No category is over cap; the closest pressure is ${closestCap(model.categoryTotals)}.`;
+        const paceText = model.projected <= model.budget
+          ? `Projected at ${money(model.projected)}, on pace to beat budget by ${money(model.budget - model.projected)}.`
+          : `Projected at ${money(model.projected)}, on pace to exceed budget by ${money(model.projected - model.budget)}.`;
+
+        const insights = [
+          `<strong>Biggest category:</strong> ${biggest[0]} is ${money(biggest[1])}; cutting 20% here saves ${money(annualSave)} per year.`,
+          `<strong>Discretionary load:</strong> food + luxuries + clothes is ${money(discretionary)}, ${model.spent ? Math.round((discretionary / model.spent) * 100) : 0}% of spending.`,
+          `<strong>Food orders:</strong> ${foodRows.length} food entries worth ${money(sum(foodRows))}, about ${(foodRows.length / elapsedWeeks).toFixed(1)} per week.`,
+          `<strong>Caps:</strong> ${overText}`,
+          `<strong>Month change:</strong> ${money(Math.abs(momDiff))} ${momDiff >= 0 ? "higher" : "lower"} than ${displayMonth(previousMonth)}.`,
+          `<strong>Pace:</strong> ${paceText}`
+        ];
+        els.insights.innerHTML = insights.map(text => `<li>${text}</li>`).join("");
+      }
+
+      function renderRecent(monthRows) {
+        const recent = [...monthRows].sort((a, b) => {
+          const byDate = b.date.localeCompare(a.date);
+          return byDate || (b.id || 0) - (a.id || 0);
+        }).slice(0, 12);
+        if (!recent.length) {
+          els.recentActivity.innerHTML = `<div class="empty">No entries in ${displayMonth(selectedMonth)}</div>`;
+          return;
+        }
+        els.recentActivity.innerHTML = recent.map(row => {
+          const sign = row.type === "income" ? "+" : "-";
+          return `
+            <div class="recent-item">
+              <span class="date">${row.date.slice(5)}</span>
+              <div>
+                <div class="note">${escapeHtml(row.note || row.category)}</div>
+                <span class="category-pill">${escapeHtml(row.category)} · ${escapeHtml(row.type)}</span>
+              </div>
+              <span class="money ${row.type}">${sign}${money(row.amount)}</span>
+            </div>`;
+        }).join("");
+      }
+
+      function normalizeRows(rows) {
+        return rows.map((row, index) => ({
+          id: row.id || index + 1,
+          date: String(row.date || new Date().toISOString().slice(0, 10)),
+          category: categories.includes(row.category) ? row.category : "other",
+          amount: Math.abs(Number(row.amount || 0)),
+          note: String(row.note || row.category || ""),
+          type: row.type === "income" ? "income" : "expense",
+          created_at: row.created_at || row.date || ""
+        })).filter(row => row.amount > 0 && /^\d{4}-\d{2}-\d{2}/.test(row.date));
+      }
+
+      function fillMonthSelect(months, activeMonth) {
+        els.monthSelect.innerHTML = months.map(month => (
+          `<option value="${month}" ${month === activeMonth ? "selected" : ""}>${displayMonth(month)}</option>`
+        )).join("");
+      }
+
+      function availableMonths(rows) {
+        const set = new Set(rows.map(row => row.date.slice(0, 7)));
+        set.add(monthKey(new Date()));
+        return [...set].sort().reverse();
+      }
+
+      function totalsByCategory(rows) {
+        return rows.reduce((totals, row) => {
+          totals[row.category] = (totals[row.category] || 0) + row.amount;
+          return totals;
+        }, {});
+      }
+
+      function sum(rows) {
+        return rows.reduce((total, row) => total + Number(row.amount || 0), 0);
+      }
+
+      function money(value) {
+        const number = Number(value || 0);
+        const sign = number < 0 ? "-" : "";
+        return `${sign}${config.currency || "₹"}${indianNumber(Math.abs(number))}`;
+      }
+
+      function shortMoney(value) {
+        const number = Math.abs(Number(value || 0));
+        if (number >= 10000000) return `${config.currency || "₹"}${(number / 10000000).toFixed(1)}cr`;
+        if (number >= 100000) return `${config.currency || "₹"}${(number / 100000).toFixed(1)}L`;
+        if (number >= 1000) return `${config.currency || "₹"}${(number / 1000).toFixed(1)}k`;
+        return money(value);
+      }
+
+      function indianNumber(value) {
+        const rounded = Math.round(Number(value || 0)).toString();
+        if (rounded.length <= 3) return rounded;
+        const last3 = rounded.slice(-3);
+        const rest = rounded.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ",");
+        return `${rest},${last3}`;
+      }
+
+      function daysInMonth(month) {
+        const [year, monthNumber] = month.split("-").map(Number);
+        return new Date(year, monthNumber, 0).getDate();
+      }
+
+      function elapsedDaysForMonth(month) {
+        const now = new Date();
+        const current = monthKey(now);
+        if (month === current) return now.getDate();
+        return daysInMonth(month);
+      }
+
+      function monthKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      }
+
+      function addMonths(month, amount) {
+        const [year, monthNumber] = month.split("-").map(Number);
+        return monthKey(new Date(year, monthNumber - 1 + amount, 1));
+      }
+
+      function lastSixMonths(month) {
+        return Array.from({ length: 6 }, (_, index) => addMonths(month, index - 5));
+      }
+
+      function displayMonth(month) {
+        const [year, monthNumber] = month.split("-").map(Number);
+        return new Date(year, monthNumber - 1, 1).toLocaleString("en-IN", { month: "short", year: "numeric" });
+      }
+
+      function monthLabel(month) {
+        const [year, monthNumber] = month.split("-").map(Number);
+        return new Date(year, monthNumber - 1, 1).toLocaleString("en-IN", { month: "short" });
+      }
+
+      function gridLines(width, height, pad) {
+        const lines = [];
+        for (let index = 0; index <= 4; index += 1) {
+          const y = pad + ((height - pad * 2) / 4) * index;
+          lines.push(`<line x1="${pad}" y1="${y}" x2="${width - pad}" y2="${y}" stroke="#1f2823" stroke-width="1" />`);
+        }
+        return lines.join("");
+      }
+
+      function closestCap(categoryTotals) {
+        let closest = null;
+        categories.forEach(category => {
+          const cap = config.budgets[category] || 0;
+          if (!cap) return;
+          const ratio = (categoryTotals[category] || 0) / cap;
+          if (!closest || ratio > closest.ratio) closest = { category, ratio, spent: categoryTotals[category] || 0, cap };
+        });
+        if (!closest) return "no configured cap";
+        return `${closest.category} at ${money(closest.spent)} of ${money(closest.cap)}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function makeSampleData() {
+        const today = new Date();
+        const notes = [
+          ["rent", 25000, "flat rent"],
+          ["food", 420, "swiggy dinner"],
+          ["travel", 500, "ola airport"],
+          ["groceries", 1850, "blinkit groceries"],
+          ["clothes", 1500, "myntra shirt"],
+          ["bills", 1299, "wifi bill"],
+          ["luxuries", 799, "movie night"],
+          ["health", 900, "pharmacy"],
+          ["education", 1200, "course book"],
+          ["investments", 8000, "sip nifty"],
+          ["other", 650, "misc cash"]
+        ];
+        const rows = [];
+        let id = 1;
+        for (let monthOffset = 5; monthOffset >= 0; monthOffset -= 1) {
+          const base = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1);
+          const month = monthKey(base);
+          const multiplier = 0.78 + (5 - monthOffset) * 0.06;
+          notes.forEach((item, index) => {
+            const day = Math.min(daysInMonth(month), 2 + index * 2);
+            rows.push({
+              id: id++,
+              date: `${month}-${String(day).padStart(2, "0")}`,
+              category: item[0],
+              amount: Math.round(item[1] * multiplier),
+              note: item[2],
+              type: "expense"
+            });
+          });
+          rows.push({
+            id: id++,
+            date: `${month}-01`,
+            category: "other",
+            amount: 75000,
+            note: "salary",
+            type: "income"
+          });
+        }
+        return rows;
+      }
+    })();
+  </script>
+</body>
+</html>
