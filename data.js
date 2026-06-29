@@ -1,5 +1,15 @@
-{
-  "telegram_token": "8612687863:AAFBla8OGF_1cyAJ0PIDNv2DdD9mU1idW4w",
+window.EXPENSE_DATA = [
+  {
+    "id": 1,
+    "date": "2026-06-29",
+    "category": "other",
+    "amount": 682.0,
+    "note": "policy bazaar insurance",
+    "type": "expense",
+    "created_at": "2026-06-29T13:16:00+05:30"
+  }
+];
+window.EXPENSE_CONFIG = {
   "currency": "₹",
   "monthlyBudget": 35000,
   "budgets": {
@@ -15,4 +25,4 @@
     "education": 3000,
     "other": 4000
   }
-}
+};
